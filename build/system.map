@@ -1,0 +1,7 @@
+00010000 T _start
+0001000d T kernel_init
+00013000 D message
+0001300e B __bss_start
+0001300e D _edata
+00013020 B buff
+00013420 B _end
