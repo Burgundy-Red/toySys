@@ -1,11 +1,17 @@
-#include "onix/onix.h"
+#include "onix/debug.h"
 
-char message[] = "Hello onix...";
-char buff[1024];
+extern void memory_map_init();
+extern void mapping_init();
+extern void hang();
 
 void kernel_init() {
-    char *video = (char*)0xb8000;
-    for (int i = 0; i < sizeof(message); i++) {
-        video[i * 2] = message[i];
-    }
+
+    // console_init();
+    // kernel_init();
+    memory_map_init();
+    mapping_init();
+
+    hang();
+
+    return;
 }
