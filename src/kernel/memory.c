@@ -84,7 +84,6 @@ void memory_map_init() {
 
     // 清空物理内存数组
     memset((void *)memory_map, 0, memory_map_pages * PAGE_SIZE);
-000000
     // 前 1M 的内存位置 以及 物理内存数组已占用的页，已被占用
     start_page = IDX(MEMORY_BASE) + memory_map_pages;
     for (size_t i = 0; i < start_page; i++) {
