@@ -120,7 +120,7 @@
         检测IF位(是否开启中断)，检测INTR引脚(级联8259a芯片)，得到中断编号，执行
 
         利用外中断(时钟中断)进行任务切换：
-        ![中断任务上下文](./images/interrupt_context.drawio.svg)  
+        ![中断任务上下文](../images/interrupt_context.drawio.svg)  
     
     TODO: 初始化外中断步骤
     
