@@ -121,7 +121,7 @@
 
         利用外中断(时钟中断)进行任务切换：
         
-        ![img1](./images/interrupt_context.drawio.svg)  
+    ![](./images/interrupt_context.drawio.svg)
     
     TODO: 初始化外中断步骤
     
