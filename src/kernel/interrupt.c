@@ -113,7 +113,7 @@ void pic_init()
     outb(PIC_S_DATA, 0b00000001); // ICW4: 8086模式, 正常EOI
 
     // 只保留时钟中断
-    outb(PIC_M_DATA, 0b11111110); // 关闭所有中断
+    outb(PIC_M_DATA, 0b11111111); // 关闭所有中断
     outb(PIC_S_DATA, 0b11111111); // 关闭所有中断
 }
 

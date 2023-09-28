@@ -16,7 +16,7 @@ typedef struct page_entry_t {
     u8 dirty : 1;    // 脏页，表示该页缓冲被写过
     u8 pat : 1;      // page attribute table 页大小 4K/4M
     u8 global : 1;   // 全局，所有进程都用到了，该页不刷新缓冲
-    u8 ignored : 3;  // 该安排的都安排了，送给操作系统吧
+    u8 ignored : 3;  // 无用
     u32 index : 20;  // 页索引
 } _packed page_entry_t;
 
