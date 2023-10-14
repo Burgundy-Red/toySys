@@ -2,9 +2,8 @@
 #define ONIX_TYPES_H
 
 #include "onix/onix.h"
-#include "onix/errno.h"
 
-#define EOF -EEOF // END OF FILE
+#define EOF -1 // END OF FILE
 
 #define NULL ((void *)0) // 空指针
 
@@ -19,12 +18,6 @@
 #define true 1
 #define false 0
 #endif
-
-// 标记弱符号
-#define weak __attribute__((__weak__))
-
-// 标记不会返回的函数
-#define noreturn __attribute__((__noreturn__))
 
 // 用于定义特殊的结构体
 #define _packed __attribute__((packed))
@@ -52,18 +45,12 @@ typedef int32 dev_t;
 typedef u32 time_t;
 typedef u32 idx_t;
 
-typedef u16 mode_t; // 文件权限
-
 typedef int32 fd_t;
 typedef enum std_fd_t
 {
-    STDIN_FILENO,
-    STDOUT_FILENO,
-    STDERR_FILENO,
+    stdin,
+    stdout,
+    stderr,
 } std_fd_t;
-
-typedef int32 off_t; // 文件偏移
-
-typedef int err_t; // 错误类型
 
 #endif

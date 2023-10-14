@@ -1,9 +1,10 @@
-#include "onix/interrupt.h"
-#include "onix/global.h"
-#include "onix/debug.h"
-#include "onix/printk.h"
-#include "onix/stdlib.h"
-#include "onix/io.h"
+#include <onix/interrupt.h>
+#include <onix/global.h>
+#include <onix/debug.h>
+#include <onix/printk.h>
+#include <onix/stdlib.h>
+#include <onix/io.h>
+#include <onix/assert.h>
 
 #define LOGK(fmt, args...) DEBUGK(fmt, ##args)
 // #define LOGK(fmt, args...)
@@ -21,6 +22,8 @@ pointer_t idt_ptr;
 
 handler_t handler_table[IDT_SIZE];
 extern handler_t handler_entry_table[ENTRY_SIZE];
+extern void syscall_handler();
+extern void page_fault();
 
 static char *messages[] = {
     "#DE Divide Error\0",
@@ -47,7 +50,6 @@ static char *messages[] = {
     "#CP Control Protection Exception\0",
 };
 
-// TODO
 // 通知中断控制器，中断处理结束
 void send_eoi(int vector)
 {
@@ -62,12 +64,71 @@ void send_eoi(int vector)
     }
 }
 
-extern void schedule();
+void set_interrupt_handler(u32 irq, handler_t handler)
+{
+    assert(irq >= 0 && irq < 16);
+    handler_table[IRQ_MASTER_NR + irq] = handler;
+}
+
+void set_interrupt_mask(u32 irq, bool enable)
+{
+    assert(irq >= 0 && irq < 16);
+    u16 port;
+    if (irq < 8)
+    {
+        port = PIC_M_DATA;
+    }
+    else
+    {
+        port = PIC_S_DATA;
+        irq -= 8;
+    }
+    if (enable)
+    {
+        outb(port, inb(port) & ~(1 << irq));
+    }
+    else
+    {
+        outb(port, inb(port) | (1 << irq));
+    }
+}
+
+// 清除 IF 位，返回设置之前的值
+bool interrupt_disable()
+{
+    asm volatile(
+        "pushfl\n"        // 将当前 eflags 压入栈中
+        "cli\n"           // 清除 IF 位，此时外中断已被屏蔽
+        "popl %eax\n"     // 将刚才压入的 eflags 弹出到 eax
+        "shrl $9, %eax\n" // 将 eax 右移 9 位，得到 IF 位
+        "andl $1, %eax\n" // 只需要 IF 位
+    );
+}
+
+// 获得 IF 位
+bool get_interrupt_state()
+{
+    asm volatile(
+        "pushfl\n"        // 将当前 eflags 压入栈中
+        "popl %eax\n"     // 将压入的 eflags 弹出到 eax
+        "shrl $9, %eax\n" // 将 eax 右移 9 位，得到 IF 位
+        "andl $1, %eax\n" // 只需要 IF 位
+    );
+}
+
+// 设置 IF 位
+void set_interrupt_state(bool state)
+{
+    if (state)
+        asm volatile("sti\n");
+    else
+        asm volatile("cli\n");
+}
 
 void default_handler(int vector)
 {
     send_eoi(vector);
-    schedule();
+    DEBUGK("[%x] default interrupt called...\n", vector);
 }
 
 void exception_handler(
@@ -98,7 +159,6 @@ void exception_handler(
     hang();
 }
 
-// TODO 与硬件相关
 // 初始化中断控制器
 void pic_init()
 {
@@ -112,7 +172,6 @@ void pic_init()
     outb(PIC_S_DATA, 2);          // ICW3: 设置从片连接到主片的 IR2 引脚
     outb(PIC_S_DATA, 0b00000001); // ICW4: 8086模式, 正常EOI
 
-    // 只保留时钟中断
     outb(PIC_M_DATA, 0b11111111); // 关闭所有中断
     outb(PIC_S_DATA, 0b11111111); // 关闭所有中断
 }
@@ -140,10 +199,23 @@ void idt_init()
         handler_table[i] = exception_handler;
     }
 
-    for (size_t i = 20; i < ENTRY_SIZE; i++)
+    handler_table[0xe] = page_fault;
+
+    for (size_t i = 0x20; i < ENTRY_SIZE; i++)
     {
         handler_table[i] = default_handler;
     }
+
+    // 初始化系统调用
+    gate_t *gate = &idt[0x80];
+    gate->offset0 = (u32)syscall_handler & 0xffff;
+    gate->offset1 = ((u32)syscall_handler >> 16) & 0xffff;
+    gate->selector = 1 << 3; // 代码段
+    gate->reserved = 0;      // 保留不用
+    gate->type = 0b1110;     // 中断门
+    gate->segment = 0;       // 系统段
+    gate->DPL = 3;           // 用户态
+    gate->present = 1;       // 有效
 
     idt_ptr.base = (u32)idt;
     idt_ptr.limit = sizeof(idt) - 1;

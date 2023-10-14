@@ -1,6 +1,8 @@
 #include "onix/console.h"
 #include "onix/io.h"
 #include "onix/string.h"
+#include "onix/interrupt.h"
+#include "onix/device.h"
 
 #define CRT_ADDR_REG 0x3D4 // CRT(6845)索引寄存器
 #define CRT_DATA_REG 0x3D5 // CRT(6845)数据寄存器
@@ -152,21 +154,24 @@ static void command_del()
     *(u16 *)pos = erase;
 }
 
-// extern void start_beep();
+extern void start_beep();
 
-void console_write(char *buf, u32 count)
+int32 console_write(void *dev, char *buf, u32 count)
 {
+    bool intr = interrupt_disable(); // 禁止中断
+
     char ch;
-    while (count--)
+    int32 nr = 0;
+    while (nr++ < count)
     {
         ch = *buf++;
         switch (ch)
         {
         case ASCII_NUL:
             break;
-        // case ASCII_BEL:
-        //     start_beep();
-        //     break;
+        case ASCII_BEL:
+            start_beep();
+            break;
         case ASCII_BS:
             command_bs();
             break;
@@ -205,9 +210,18 @@ void console_write(char *buf, u32 count)
         }
     }
     set_cursor();
+
+    // 恢复中断
+    set_interrupt_state(intr);
+    return nr;
 }
 
 void console_init()
 {
     console_clear();
+
+    device_install(
+        DEV_CHAR, DEV_CONSOLE,
+        NULL, "console", 0,
+        NULL, NULL, console_write);
 }

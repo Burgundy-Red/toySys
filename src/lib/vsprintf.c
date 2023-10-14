@@ -144,6 +144,7 @@ static char *number(char *str, u32 *num, int base, int size, int precision, int 
         *str++ = ' ';
     return str;
 }
+
 int vsprintf(char *buf, const char *fmt, va_list args) {
     int len;
     int i;
@@ -159,13 +160,8 @@ int vsprintf(char *buf, const char *fmt, va_list args) {
     u32 num;
     u8 *ptr;
 
-
-
     for (str = buf; *fmt; ++fmt)
     {
-        
-        
-        
         if (*fmt != '%')
         {
             *str++ = *fmt;
@@ -382,6 +378,7 @@ int vsprintf(char *buf, const char *fmt, va_list args) {
     assert(i < 1024);
     return i;
 }
+
 int sprintf(char *buf, const char *fmt, ...)
 {
     va_list args;
